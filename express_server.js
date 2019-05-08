@@ -37,6 +37,12 @@ function generateRandomString()
   return result;
 }
 
+app.post('/urls/:shortURL/delete', (req, res) =>
+  {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls');
+  });
+
 app.get('/urls/new', (req, res) =>
   {
     res.render('urls_new');
@@ -69,8 +75,6 @@ app.post('/urls', (req, res) =>
   {
     const randString = generateRandomString();
     urlDatabase[randString] = req.body.longURL;
-    console.log(urlDatabase[randString]);
-    console.log(randString);
     res.redirect(`/url/${randString}`);
     res.end();
   });
