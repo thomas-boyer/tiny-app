@@ -142,7 +142,7 @@ app.post('/login', (req, res) =>
     const user = emailFound(req.body.email);
     if (req.body.email === '' || req.body.password === '')
     {
-      res.status(400).send("Please fill in an email and password to login: <p><a href='/register'>Try again</a></p>");
+      res.status(400).send("Please fill in an email and password to login: <p><a href='/login'>Try again</a></p>");
     }
     else if (!user)
     {

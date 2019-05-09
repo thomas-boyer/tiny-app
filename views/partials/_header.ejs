@@ -1,6 +1,6 @@
 <h1>TinyURL</h1>
 
-<a href="/urls">URLs</a> | <a href="urls/new">Create new TinyURL</a>
+<a href="/urls">URLs</a> | <a href="urls/new">Create new TinyURL</a><br>
 <% if (user) { %>
 <h2>User: <%= user.email %></h2>
 <form method="POST" action="/logout">
@@ -8,6 +8,5 @@
 </form>
 
 <% } else { %>
-<a href="/register">Register</a>
-<a href="/login">Login</a>
+<a href="/register">Register</a> | <a href="/login">Login</a>
 <% } %>
