@@ -8,7 +8,7 @@ const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 const morgan = require('morgan');
-app.use(morgan());
+app.use(morgan('dev'));
 
 const PORT = 8080;
 
@@ -65,13 +65,17 @@ function urlsFor(id)
 
 app.post('/urls/:shortURL/delete', (req, res) =>
   {
-    delete urlDatabase[req.params.shortURL];
+    const url = req.params.shortURL;
+    if (url.userID === urlDatabase[url].userID)
+    {
+      delete urlDatabase[req.params.shortURL];
+    }
     res.redirect('/urls');
   });
 
 app.get('/urls/new', (req, res) =>
   {
-    let templateVars = { user: users[req.cookies["user_id"]] };
+    let templateVars = { user: users[req.cookies["userID"]] };
     res.render('urls_new', templateVars);
   });
 
@@ -83,14 +87,20 @@ app.get('/u/:shortURL', (req, res) =>
 
 app.post('/urls/:shortURL', (req, res) =>
   {
-    let longURL = checkHTTP(req.body.newLongURL);
-    urlDatabase[req.params.shortURL].longURL = longURL;
+    const shortURL = req.params.shortURL;
+
+    if (req.cookies.userID === urlDatabase[shortURL].userID)
+    {
+      let longURL = checkHTTP(req.body.newLongURL);
+      urlDatabase[shortURL].longURL = longURL;
+    }
+
     res.redirect(`/urls`)
   });
 
 app.get('/urls/:shortURL', (req, res) =>
   {
-    const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.cookies["user_id"]] };
+    const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.cookies["userID"]] };
     res.render('urls_show', templateVars);
   });
 
@@ -101,9 +111,8 @@ app.get('/urls.json', (req, res) =>
 
 app.get('/urls', (req, res) =>
   {
-    const userID = req.cookies["user_id"];
+    const userID = req.cookies["userID"];
     const templateVars = { urls: urlsFor(userID), user: users[userID] };
-    console.log(templateVars.urls);
     res.render('urls_index', templateVars);
   });
 
@@ -115,7 +124,7 @@ app.post('/urls', (req, res) =>
     urlDatabase[randString] =
     {
       longURL,
-      userID: req.cookies.user_id
+      userID: req.cookies.userID
     };
     res.redirect(`/urls/${randString}`);
     res.end();
@@ -123,7 +132,7 @@ app.post('/urls', (req, res) =>
 
 app.get('/register', (req, res) =>
   {
-    const templateVars = { user: users[req.cookies["user_id"]] };
+    const templateVars = { user: users[req.cookies["userID"]] };
     res.render('register', templateVars);
   });
 
@@ -146,20 +155,20 @@ app.post('/register', (req, res) =>
         password: req.body.password
       };
       users[user.id] = user;
-      res.cookie('user_id', user.id);
+      res.cookie('userID', user.id);
       res.redirect('/urls');
     }
   });
 
 app.post('/logout', (req, res) =>
   {
-    res.clearCookie('user_id');
+    res.clearCookie('userID');
     res.redirect('/urls')
   });
 
 app.get('/login', (req, res) =>
   {
-    const templateVars = { user: users[req.cookies["user_id"]] };
+    const templateVars = { user: users[req.cookies["userID"]] };
     res.render('login', templateVars);
   })
 
@@ -182,7 +191,7 @@ app.post('/login', (req, res) =>
       }
       else
       {
-        res.cookie('user_id', user.id);
+        res.cookie('userID', user.id);
         res.redirect('/urls');
       }
     }
