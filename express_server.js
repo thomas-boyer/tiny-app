@@ -13,9 +13,10 @@ app.set('view engine', 'ejs');
 
 const urlDatabase =
 {
-  'b2xVn2': 'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com'
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
+
 
 const users = {};
 
@@ -41,6 +42,15 @@ function emailFound(email)
   return false;
 }
 
+function checkHTTP(url)
+{
+  if (!url.includes('//'))
+  {
+    url = 'http://' + url;
+  }
+  return url;
+}
+
 app.post('/urls/:shortURL/delete', (req, res) =>
   {
     delete urlDatabase[req.params.shortURL];
@@ -55,19 +65,20 @@ app.get('/urls/new', (req, res) =>
 
 app.get('/u/:shortURL', (req, res) =>
   {
-    const longURL = urlDatabase[req.params.shortURL];
+    const longURL = urlDatabase[req.params.shortURL].longURL;
     res.redirect(longURL);
   });
 
 app.post('/urls/:shortURL', (req, res) =>
   {
-    urlDatabase[req.params.shortURL] = req.body.newLongURL;
-    res.redirect(`/urls/${req.params.shortURL}`)
+    let longURL = checkHTTP(req.body.newLongURL);
+    urlDatabase[req.params.shortURL].longURL = longURL;
+    res.redirect(`/urls`)
   });
 
 app.get('/urls/:shortURL', (req, res) =>
   {
-    const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies["user_id"]] };
+    const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.cookies["user_id"]] };
     res.render('urls_show', templateVars);
   });
 
@@ -84,13 +95,14 @@ app.get('/urls', (req, res) =>
 
 app.post('/urls', (req, res) =>
   {
-    let longURL = req.body.longURL;
-    if (!longURL.includes('//'))
-    {
-      longURL = 'http://' + longURL;
-    }
+    let longURL = checkHTTP(req.body.longURL);
     const randString = generateRandomString();
-    urlDatabase[randString] = longURL;
+
+    urlDatabase[randString] =
+    {
+      longURL,
+      userID: req.cookies.user_id
+    };
     res.redirect(`/urls/${randString}`);
     res.end();
   });
