@@ -97,7 +97,8 @@ app.post('/urls', (req, res) =>
 
 app.get('/register', (req, res) =>
   {
-    res.render('register');
+    const templateVars = { user: users[req.cookies["user_id"]] };
+    res.render('register', templateVars);
   });
 
 app.post('/register', (req, res) =>
@@ -132,7 +133,8 @@ app.post('/logout', (req, res) =>
 
 app.get('/login', (req, res) =>
   {
-    res.render('login');
+    const templateVars = { user: users[req.cookies["user_id"]] };
+    res.render('login', templateVars);
   })
 
 app.post('/login', (req, res) =>
