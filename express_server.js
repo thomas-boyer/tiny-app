@@ -7,16 +7,14 @@ app.use(bodyParser.urlencoded({extended: true}));
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
+const morgan = require('morgan');
+app.use(morgan());
+
 const PORT = 8080;
 
 app.set('view engine', 'ejs');
 
-const urlDatabase =
-{
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
-};
-
+const urlDatabase = {};
 
 const users = {};
 
@@ -49,6 +47,20 @@ function checkHTTP(url)
     url = 'http://' + url;
   }
   return url;
+}
+
+function urlsFor(id)
+{
+  const userURLs = {};
+
+  for (url in urlDatabase)
+  {
+    if (urlDatabase[url].userID == id)
+    {
+      userURLs[url] = { longURL: urlDatabase[url].longURL };
+    }
+  }
+  return userURLs;
 }
 
 app.post('/urls/:shortURL/delete', (req, res) =>
@@ -89,7 +101,9 @@ app.get('/urls.json', (req, res) =>
 
 app.get('/urls', (req, res) =>
   {
-    const templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]] };
+    const userID = req.cookies["user_id"];
+    const templateVars = { urls: urlsFor(userID), user: users[userID] };
+    console.log(templateVars.urls);
     res.render('urls_index', templateVars);
   });
 
