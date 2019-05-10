@@ -14,7 +14,16 @@ const PORT = 8080;
 app.set('view engine', 'ejs');
 
 const urlDatabase = {};
-const users = {};
+const users =
+{
+  nrnSXX:
+  {
+    id: 'nrnSXX',
+    email: 'hello@hello.com',
+    password: '$2b$10$bG.GzehXxioceWA1TLYhaOOQipplSlYxmnpzLCNUCf5PonmpDVUCe'
+  }
+}
+
 
 //////////HELPER FUNCTIONS//////////
 
@@ -193,7 +202,7 @@ app.post('/urls', (req, res) =>
     res.redirect(`/urls/${randString}`);
   });
 
-//Dispaly the register page
+//Display the register page
 app.get('/register', (req, res) =>
   {
     const userID = req.session.userID;
@@ -237,6 +246,7 @@ app.post('/register', (req, res) =>
       //Add user object to users database
       users[user.id] = user;
       req.session.userID = user.id;
+      console.log(users);
       res.redirect('/urls');
     }
   });
