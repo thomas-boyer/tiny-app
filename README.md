@@ -6,7 +6,11 @@ TinyApp is a full-stack web app that can shorten URLs and save the results, call
 
 !["The main page, displaying two shortened links"](https://github.com/thomas-boyer/tiny-app/blob/master/docs/urls_index.png)
 
+---
+
 !["Creating a new link"](https://github.com/thomas-boyer/tiny-app/blob/master/docs/new_url.png)
+
+---
 
 !["Editing a TinyURL"](https://github.com/thomas-boyer/tiny-app/blob/master/docs/edit_url.png)
 
