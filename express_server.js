@@ -10,6 +10,8 @@ app.use(cookieParser());
 const morgan = require('morgan');
 app.use(morgan('dev'));
 
+const bcrypt = require('bcrypt');
+
 const PORT = 8080;
 
 app.set('view engine', 'ejs');
@@ -152,7 +154,7 @@ app.post('/register', (req, res) =>
       {
         id: generateRandomString(),
         email: req.body.email,
-        password: req.body.password
+        password: bcrypt.hashSync(req.body.password, 10)
       };
       users[user.id] = user;
       res.cookie('userID', user.id);
@@ -185,7 +187,7 @@ app.post('/login', (req, res) =>
     }
     else
     {
-      if (req.body.password !== user.password)
+      if (!bcrypt.compareSync(req.body.password, user.password))
       {
         res.status(403).send("Incorrect email or password. <p><a href='/login'>Try again</a></p>");
       }
