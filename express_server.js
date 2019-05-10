@@ -67,9 +67,19 @@ function urlsFor(id)
 
 app.post('/urls/:shortURL/delete', (req, res) =>
   {
-    if (req.session.userID === urlDatabase[url].userID)
+    const shortURL = req.params.shortURL;
+
+    if (!req.session.userID)
     {
-      delete urlDatabase[req.params.shortURL];
+      res.status(401).send("401 Error: You are not logged in.<p><a href='/'>Return to main page</a></p>")
+    }
+    else if (req.session.userID !== urlDatabase[shortURL].userID)
+    {
+      res.status(403).send("403 Error: You do not have access to this page.<p><a href='/'>Return to main page</a></p>")
+    }
+    else
+    {
+      delete urlDatabase[shortURL];
     }
     res.redirect('/urls');
   });
@@ -82,6 +92,10 @@ app.get('/urls/new', (req, res) =>
 
 app.get('/u/:shortURL', (req, res) =>
   {
+    if (!urlDatabase[req.params.shortURL])
+    {
+      res.status(400).send("400 Error: Requested TinyURL does not exist.<p><a href='/'>Return to main page</a></p>")
+    }
     const longURL = urlDatabase[req.params.shortURL].longURL;
     res.redirect(longURL);
   });
@@ -90,19 +104,38 @@ app.post('/urls/:shortURL', (req, res) =>
   {
     const shortURL = req.params.shortURL;
 
-    if (req.session.userID === urlDatabase[shortURL].userID)
+    if (!req.session.userID)
+    {
+      res.status(401).send("401 Error: You are not logged in.<p><a href='/'>Return to main page</a></p>")
+    }
+    else if (req.session.userID !== urlDatabase[shortURL].userID)
+    {
+      res.status(403).send("403 Error: You do not have access to this page.<p><a href='/'>Return to main page</a></p>")
+    }
+    else
     {
       let longURL = checkHTTP(req.body.newLongURL);
       urlDatabase[shortURL].longURL = longURL;
+      res.redirect(`/urls`);
     }
-
-    res.redirect(`/urls`)
   });
 
 app.get('/urls/:shortURL', (req, res) =>
   {
-    const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.session.userID] };
-    res.render('urls_show', templateVars);
+    const shortURL = req.params.shortURL;
+    if (!urlDatabase[req.params.shortURL])
+    {
+      res.status(400).send("400 Error: Requested TinyURL does not exist.<p><a href='/'>Return to main page</a></p>")
+    }
+    else if (req.session.userID !== urlDatabase[shortURL].userID)
+    {
+      res.status(401).send("401 Error: You do not have access to this page.<p><a href='/'>Return to main page</a></p>")
+    }
+    else
+    {
+      const templateVars = { shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.session.userID] };
+      res.render('urls_show', templateVars);
+    }
   });
 
 app.get('/urls.json', (req, res) =>
@@ -112,13 +145,24 @@ app.get('/urls.json', (req, res) =>
 
 app.get('/urls', (req, res) =>
   {
-    const userID = req.session.userID;
-    const templateVars = { urls: urlsFor(userID), user: users[userID] };
-    res.render('urls_index', templateVars);
+    if (!req.session.userID)
+    {
+      res.redirect('/login');
+    }
+    else
+    {
+      const userID = req.session.userID;
+      const templateVars = { urls: urlsFor(userID), user: users[userID] };
+      res.render('urls_index', templateVars);
+    }
   });
 
 app.post('/urls', (req, res) =>
   {
+    if (!req.session.userID)
+    {
+      res.status(401).send("401 Error: You are not logged in.<p><a href='/'>Return to main page</a></p>")
+    }
     let longURL = checkHTTP(req.body.longURL);
     const randString = generateRandomString();
 
@@ -133,8 +177,15 @@ app.post('/urls', (req, res) =>
 
 app.get('/register', (req, res) =>
   {
-    const templateVars = { user: users[req.session.userID] };
-    res.render('register', templateVars);
+    if (req.session.userID)
+    {
+      res.redirect("/urls");
+    }
+    else
+    {
+      const templateVars = { user: users[req.session.userID] };
+      res.render('register', templateVars);
+    }
   });
 
 app.post('/register', (req, res) =>
@@ -164,13 +215,20 @@ app.post('/register', (req, res) =>
 app.post('/logout', (req, res) =>
   {
     req.session = null;
-    res.redirect('/urls')
+    res.redirect('/login')
   });
 
 app.get('/login', (req, res) =>
   {
-    const templateVars = { user: users[req.session.userID] };
-    res.render('login', templateVars);
+    if (req.session.userID)
+    {
+      res.redirect("/urls")
+    }
+    else
+    {
+      const templateVars = { user: users[req.session.userID] };
+      res.render('login', templateVars);
+    }
   })
 
 app.post('/login', (req, res) =>
@@ -180,23 +238,29 @@ app.post('/login', (req, res) =>
     {
       res.status(400).send("Please fill in an email and password to login: <p><a href='/login'>Try again</a></p>");
     }
-    else if (!user)
+    else if (!user || !bcrypt.compareSync(req.body.password, user.password))
     {
-      res.status(403).send("Email not found. <p><a href='/login'>Try again</a></p>");
+      res.status(403).send("Incorrect email or password. <p><a href='/login'>Try again</a></p>");
     }
     else
     {
-      if (!bcrypt.compareSync(req.body.password, user.password))
-      {
-        res.status(403).send("Incorrect email or password. <p><a href='/login'>Try again</a></p>");
-      }
-      else
-      {
-        req.session.userID = user.id;
-        res.redirect('/urls');
-      }
+      req.session.userID = user.id;
+      res.redirect('/urls');
     }
   });
+
+app.get('/', (req, res) =>
+  {
+    console.log("ID:", req.session.userID);
+    if (req.session.userID)
+    {
+      res.redirect('/urls');
+    }
+    else
+    {
+      res.redirect('/login');
+    }
+  })
 
 app.listen(PORT, () =>
   {
