@@ -4,8 +4,8 @@ const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({extended: true}));
 
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+const cookieSession = require('cookie-session')
+app.use(cookieSession({ name: 'session', keys: ['key1', 'key2'] }));
 
 const morgan = require('morgan');
 app.use(morgan('dev'));
@@ -67,8 +67,7 @@ function urlsFor(id)
 
 app.post('/urls/:shortURL/delete', (req, res) =>
   {
-    const url = req.params.shortURL;
-    if (url.userID === urlDatabase[url].userID)
+    if (req.session.userID === urlDatabase[url].userID)
     {
       delete urlDatabase[req.params.shortURL];
     }
@@ -77,7 +76,7 @@ app.post('/urls/:shortURL/delete', (req, res) =>
 
 app.get('/urls/new', (req, res) =>
   {
-    let templateVars = { user: users[req.cookies["userID"]] };
+    let templateVars = { user: users[req.session.userID] };
     res.render('urls_new', templateVars);
   });
 
@@ -91,7 +90,7 @@ app.post('/urls/:shortURL', (req, res) =>
   {
     const shortURL = req.params.shortURL;
 
-    if (req.cookies.userID === urlDatabase[shortURL].userID)
+    if (req.session.userID === urlDatabase[shortURL].userID)
     {
       let longURL = checkHTTP(req.body.newLongURL);
       urlDatabase[shortURL].longURL = longURL;
@@ -102,7 +101,7 @@ app.post('/urls/:shortURL', (req, res) =>
 
 app.get('/urls/:shortURL', (req, res) =>
   {
-    const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.cookies["userID"]] };
+    const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.session.userID] };
     res.render('urls_show', templateVars);
   });
 
@@ -113,7 +112,7 @@ app.get('/urls.json', (req, res) =>
 
 app.get('/urls', (req, res) =>
   {
-    const userID = req.cookies["userID"];
+    const userID = req.session.userID;
     const templateVars = { urls: urlsFor(userID), user: users[userID] };
     res.render('urls_index', templateVars);
   });
@@ -126,7 +125,7 @@ app.post('/urls', (req, res) =>
     urlDatabase[randString] =
     {
       longURL,
-      userID: req.cookies.userID
+      userID: req.session.userID
     };
     res.redirect(`/urls/${randString}`);
     res.end();
@@ -134,7 +133,7 @@ app.post('/urls', (req, res) =>
 
 app.get('/register', (req, res) =>
   {
-    const templateVars = { user: users[req.cookies["userID"]] };
+    const templateVars = { user: users[req.session.userID] };
     res.render('register', templateVars);
   });
 
@@ -157,20 +156,20 @@ app.post('/register', (req, res) =>
         password: bcrypt.hashSync(req.body.password, 10)
       };
       users[user.id] = user;
-      res.cookie('userID', user.id);
+      req.session.userID = user.id;
       res.redirect('/urls');
     }
   });
 
 app.post('/logout', (req, res) =>
   {
-    res.clearCookie('userID');
+    req.session = null;
     res.redirect('/urls')
   });
 
 app.get('/login', (req, res) =>
   {
-    const templateVars = { user: users[req.cookies["userID"]] };
+    const templateVars = { user: users[req.session.userID] };
     res.render('login', templateVars);
   })
 
@@ -193,7 +192,7 @@ app.post('/login', (req, res) =>
       }
       else
       {
-        res.cookie('userID', user.id);
+        req.session.userID = user.id;
         res.redirect('/urls');
       }
     }
